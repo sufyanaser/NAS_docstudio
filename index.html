@@ -3,11 +3,496 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>NAS Document Studio</title>
-<link rel="stylesheet" href="./app.css" />
+<title>NAS Document Studio — Professional Inspector</title>
+<meta name="robots" content="noindex" />
+<style>
+:root{
+  --bg:#060a12;--panel:#0a1220;--panel2:#0f1a2a;--panel3:#132235;--line:rgba(0,212,255,.16);
+  --line2:rgba(255,255,255,.08);--text:#eaf4fb;--muted:#8094aa;--soft:#a9bacb;--cyan:#00d4ff;
+  --cyan2:#78e9ff;--danger:#ff5470;--warn:#ffc04d;--ok:#57e389;--shadow:rgba(0,0,0,.45);
+  --pageW:210mm;--pageH:297mm
+}
+*{box-sizing:border-box}
+html,body,#app-root{height:100%;margin:0}
+body{font-family:"IBM Plex Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+input,select,textarea{outline:none}
+input[type="range"]{accent-color:var(--cyan)}
+.mono{font-family:"IBM Plex Mono",Consolas,monospace;direction:ltr}
+.shell{height:100%;display:grid;grid-template-rows:58px 1fr;background:radial-gradient(circle at 50% -10%,rgba(0,212,255,.08),transparent 34%),var(--bg)}
+.top{
+  height:58px;display:flex;align-items:center;gap:10px;padding:0 14px;
+  background:linear-gradient(180deg,#0d1726,#09101b);border-bottom:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.22);z-index:5
+}
+.brand{display:flex;gap:10px;align-items:center;font-weight:900;letter-spacing:.2px}
+.mark{width:30px;height:30px;border-radius:50%;background:conic-gradient(from 20deg,transparent 0 18%,var(--cyan) 19% 28%,transparent 29% 43%,var(--cyan) 44% 53%,transparent 54%);box-shadow:0 0 24px rgba(0,212,255,.3)}
+.topMeta{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px}
+.grow{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:var(--soft);background:rgba(15,26,42,.7);font-size:11px}
+.pill:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.app{height:calc(100vh - 58px);display:grid;grid-template-columns:330px minmax(560px,1fr) 390px;min-width:1280px}
+.side{min-height:0;overflow:auto;background:linear-gradient(180deg,#0a1220,#070d17);border-inline-end:1px solid var(--line);padding:12px;scrollbar-width:none}
+.side::-webkit-scrollbar,.canvasWrap::-webkit-scrollbar{display:none}
+.side.right{border-inline-end:0;border-inline-start:1px solid var(--line)}
+.sideHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 12px}
+.sideTitle{font-weight:900;font-size:13px;color:#e8f7ff}
+.sideSub{font-size:10px;color:var(--muted);line-height:1.6;margin-top:2px}
+.modeTabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.btn,.segBtn,.iconBtn{
+  border:1px solid var(--line);border-radius:10px;background:linear-gradient(180deg,var(--panel3),var(--panel2));color:var(--text);
+  padding:8px 10px;font-size:12px;transition:.16s ease;min-height:34px
+}
+.btn:hover,.segBtn:hover,.iconBtn:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-1px)}
+.btn.primary{background:linear-gradient(180deg,var(--cyan2),var(--cyan));color:#04131d;border-color:var(--cyan);font-weight:900}
+.btn.danger:hover{border-color:var(--danger);color:var(--danger)}
+.btn.ghost{background:transparent}
+.seg{display:grid;grid-template-columns:repeat(var(--n,2),1fr);gap:6px}
+.segBtn{padding:7px 6px;font-size:11px;text-align:center}
+.segBtn.active{border-color:var(--cyan);background:rgba(0,212,255,.11);color:var(--cyan);box-shadow:inset 0 0 0 1px rgba(0,212,255,.08)}
+.field,select,textarea{
+  width:100%;border:1px solid var(--line);border-radius:10px;background:#0c1727;color:var(--text);padding:8px;font-size:12px;min-height:36px
+}
+textarea{resize:vertical;min-height:80px;line-height:1.65}
+.field:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.08)}
+label.ctrl{display:block;margin-bottom:9px}
+.labelLine{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;color:var(--muted);font-size:11px}
+.value{font-size:10px;color:var(--cyan);direction:ltr}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.row>*{flex:1}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.acc{border:1px solid var(--line);border-radius:15px;margin-bottom:10px;background:rgba(16,26,42,.72);overflow:hidden}
+.acc summary{list-style:none;padding:12px 13px;font-size:12px;font-weight:900;color:#e0f7ff;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.acc summary::-webkit-details-marker{display:none}
+.acc summary:after{content:'+';color:var(--cyan);font-family:Consolas,monospace;font-weight:700}
+.acc[open] summary:after{content:'−'}
+.acc .sum{display:flex;flex-direction:column;gap:2px}
+.acc .sum small{font-size:10px;color:var(--muted);font-weight:400}
+.accBody{padding:0 12px 12px;border-top:1px solid rgba(0,212,255,.08)}
+.blockBtn{
+  min-height:54px;border-radius:13px;border:1px solid var(--line);background:linear-gradient(180deg,#122136,#0b1524);
+  color:var(--text);font-size:12px;padding:9px 8px;text-align:right;transition:.16s ease;display:flex;flex-direction:column;gap:3px
+}
+.blockBtn small{font-size:10px;color:var(--muted)}
+.blockBtn:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,212,255,.08)}
+.hint{font-size:11px;color:var(--muted);border:1px dashed var(--line);border-radius:12px;padding:10px;line-height:1.75;background:rgba(0,212,255,.025)}
+.swatchRow{display:grid;grid-template-columns:40px 1fr;gap:8px;align-items:center}
+input[type=color]{height:36px;padding:3px;border-radius:10px}
+.canvasWrap{min-height:0;overflow:auto;padding:24px 0 90px;background:radial-gradient(circle at 55% 0,rgba(0,212,255,.06),transparent 32%),#070b13}
+.canvas{display:flex;flex-direction:column;gap:28px;align-items:center}
+.page{
+  width:var(--pageW);height:var(--pageH);flex:none;position:relative;display:flex;flex-direction:column;background:var(--pBg);color:var(--pText);
+  border:1px solid var(--pBorder);box-shadow:0 18px 55px rgba(0,0,0,.58);overflow:hidden
+}
+.page.landscape{width:297mm;height:210mm}
+.page.selected{outline:2px solid var(--cyan)}
+.page.grid:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,255,var(--gridO)) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,var(--gridO)) 1px,transparent 1px);background-size:22mm 22mm;pointer-events:none}
+.page.safe:after{content:"";position:absolute;inset:var(--padY) var(--padX);border:1px dashed rgba(255,192,77,.45);pointer-events:none;z-index:10}
+.page.coverAura .content:after{content:"";position:absolute;inset:auto -80mm -80mm auto;width:180mm;height:180mm;border-radius:50%;background:radial-gradient(circle,var(--pAccent),transparent 60%);opacity:.15;pointer-events:none}
+.head{height:var(--headH);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:0 var(--padX);background:var(--pBg);color:var(--pText);border-bottom:1px solid color-mix(in srgb,var(--pAccent),transparent 45%);z-index:2;font-size:9.5px}
+.head.hide,.foot.hide{display:none}
+.foot{height:var(--footH);display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;gap:8px;padding:0 var(--padX);color:var(--pMuted);border-top:1px solid var(--pBorder);font-size:9.5px;z-index:2}
+.foot span:nth-child(2),.hc{text-align:center}.foot span:nth-child(3),.hr{text-align:left}
+.logoBox{display:flex;align-items:center;gap:7px;direction:ltr}
+.logoMark{width:var(--logoSize);height:var(--logoSize);border-radius:50%;background:conic-gradient(from 20deg,transparent 0 18%,var(--pAccent) 19% 28%,transparent 29% 43%,var(--pAccent) 44% 53%,transparent 54%);box-shadow:0 0 14px color-mix(in srgb,var(--pAccent),transparent 52%)}
+.logoText{font-weight:900;font-size:12px}
+.content{flex:1;min-height:0;padding:var(--padY) var(--padX);z-index:1;position:relative}
+.blk{position:relative;margin-bottom:var(--bAfter);padding:var(--bPad);border:1px solid transparent;border-radius:var(--bRadius);text-align:var(--bAlign);max-width:var(--bWidth);margin-inline-start:var(--bStart);margin-inline-end:var(--bEnd);background:var(--bBg);color:var(--bColor)}
+.blk:hover,.blk.sel{border-color:var(--pAccent);box-shadow:0 0 0 1px color-mix(in srgb,var(--pAccent),transparent 70%)}
+.blk [contenteditable]:focus{outline:0}
+.blkLabel{display:none;position:absolute;top:-20px;right:8px;background:#06101d;border:1px solid var(--pAccent);color:var(--pAccent);border-radius:999px;padding:2px 8px;font-size:9px;z-index:8}
+.blk.sel .blkLabel{display:block}
+.btool{display:none;position:absolute;top:-20px;left:6px;gap:4px;z-index:9}
+.blk.sel .btool{display:flex}
+.btool button{border:1px solid var(--line);background:#07101b;color:var(--text);border-radius:8px;font-size:10px;padding:3px 7px}
+h1,h2,p{margin:0}
+.bTitle{font-size:var(--bFs);line-height:var(--bLh);font-weight:var(--bWeight);color:var(--bColor)}
+.bSub{font-size:var(--bFs);line-height:var(--bLh);font-weight:var(--bWeight);color:var(--bColor)}
+.bPara{font-size:var(--bFs);line-height:var(--bLh);font-weight:var(--bWeight);color:var(--bColor);white-space:pre-wrap}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--pAccent);font-size:var(--bFs);letter-spacing:var(--bLs);font-weight:900;text-transform:uppercase;direction:ltr}
+.eyebrow:before{content:"";width:24mm;height:1px;background:var(--pAccent)}
+.noteBox{font-size:var(--bFs);line-height:var(--bLh);font-weight:var(--bWeight);padding:0;white-space:pre-wrap}
+.blk.accentLine{border-inline-end:2mm solid var(--pAccent)}
+.divider{height:1px;background:var(--pBorder);width:100%}
+.spacer{height:var(--spaceH)}
+.tableWrap{width:100%;overflow:hidden;border-radius:var(--tRadius)}
+.table{width:var(--tWidth);border-collapse:separate;border-spacing:0;font-size:var(--tFs);line-height:1.45;margin-inline:auto}
+.table th,.table td{padding:var(--tPad);text-align:var(--tAlign);border-bottom:var(--tBorder);vertical-align:top}
+.table th{background:var(--tHeadBg);color:var(--tHeadColor);font-weight:var(--tHeadWeight)}
+.table td{background:var(--tCellBg);color:var(--pText)}
+.table.zebra tr:nth-child(even) td{background:color-mix(in srgb,var(--tCellBg),var(--pAccent) 6%)}
+.table.noBorder th,.table.noBorder td{border-bottom:0}
+.metricGrid,.cardGrid{display:grid;grid-template-columns:repeat(var(--cols),1fr);gap:4mm}
+.card,.metric{border:1px solid var(--pBorder);background:var(--pCard);border-radius:12px;padding:5mm;text-align:right}
+.metric .n{font-size:22pt;font-weight:900;color:var(--pAccent);direction:ltr}.metric .l{font-size:8.5pt;color:var(--pMuted)}
+.card h3{font-size:12pt;margin:0 0 2mm}.card p{font-size:9pt;line-height:1.7;margin:0;color:var(--pText)}
+.coverHero{min-height:100mm;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:6mm}
+.coverHero .k{color:var(--pAccent);letter-spacing:4px;font-size:8pt;font-weight:900;direction:ltr}.coverHero h1{font-size:28pt;line-height:1.35;margin:0}.coverHero p{font-size:10pt;line-height:1.9;margin:0;max-width:110mm}
+.statusChip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--pBorder);border-radius:999px;padding:2mm 4mm;font-size:9pt;background:var(--pCard)}
+.statusChip:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--pAccent)}
+.emptyState{padding:28px;border:1px dashed var(--line);border-radius:16px;color:var(--muted);text-align:center;line-height:1.8}
+@page{size:A4;margin:0}
+@media print{
+  body{background:#fff;overflow:visible}.top,.side,.btool,.blkLabel{display:none!important}
+  .shell,.app{display:block;height:auto;min-width:0}.canvasWrap{overflow:visible;padding:0;background:#fff}.canvas{display:block}
+  .page{box-shadow:none;border:0;outline:0!important;width:210mm;height:297mm;break-after:page}.page.landscape{width:297mm;height:210mm}
+  .page:last-child{break-after:auto}.blk{break-inside:avoid;border-color:transparent!important}
+  .page,.head,.foot,.table th,.table td,.card,.metric,.noteBox,.statusChip{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
 </head>
 <body>
 <div id="app-root"></div>
-<script src="./app.js"></script>
+<script>
+(function(){
+const root=document.getElementById('app-root');
+const LS='nas_docstudio_professional_inspector_v1';
+const UID=()=>Math.random().toString(36).slice(2,9);
+const deep=x=>JSON.parse(JSON.stringify(x));
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+let state=load();
+let selPage=0,selBlock=null,rightMode='add';
+
+function defaultSettings(){
+  return {
+    pageSize:'A4',orientation:'portrait',direction:'rtl',exportType:'PDF',
+    theme:'light-pro',backgroundMode:'mixed',
+    colors:{primary:'#0d2b48',accent:'#00d4ff',text:'#111820',muted:'#748293',border:'#dbe4ea'},
+    visual:{grid:true,gridOpacity:.035,coverAura:true,borderIntensity:40,glowIntensity:30,safeArea:false},
+    geometry:{marginX:16,marginY:14,sectionSpacing:6,contentMaxWidth:100,headerSpacing:14,footerSpacing:10,pagePadding:14},
+    header:{enabled:true,line:true,logo:true,left:true,center:true,right:true,alignment:'spread',logoText:false},
+    footer:{enabled:true,pageNumber:true,contact:true,center:true,alignment:'spread'},
+    typography:{arabic:'IBM Plex Sans Arabic',english:'IBM Plex Mono',base:11,title:26,subtitle:17,lineHeight:1.75,paragraphSpacing:6,letterSpacing:2,weight:'400'},
+    export:{scale:1,printBackground:true,highQuality:true,filename:'nas-codeworks-document'}
+  }
+}
+function page(type='content',dark=false){return {id:UID(),type,blocks:[],style:{mode:dark?'dark':'light'}}}
+function block(type){
+  const base={id:UID(),type,pageIndex:selPage,order:0,content:{text:''},style:{},settings:{}};
+  const textSettings={direction:'rtl',size:11,weight:400,lineHeight:1.75,align:'right',width:'full',position:'start',before:0,after:6,indent:0,letterSpacing:0,colorRole:'default',background:false,accentLine:false,border:false,rounded:10,padding:0};
+  if(type==='h1')return {...base,content:{text:'عنوان رئيسي جديد'},settings:{...textSettings,size:26,weight:800,lineHeight:1.35,after:8,width:'wide'}};
+  if(type==='subtitle')return {...base,content:{text:'عنوان فرعي يشرح محتوى القسم'},settings:{...textSettings,size:16,weight:700,lineHeight:1.55,after:7,width:'wide'}};
+  if(type==='paragraph')return {...base,content:{text:'اكتب فقرة واضحة هنا. يمكن تعديل الاتجاه والحجم والمسافة والمحاذاة من لوحة الخصائص.'},settings:{...textSettings}};
+  if(type==='eyebrow')return {...base,content:{text:'COMMERCIAL INFRASTRUCTURE DOCUMENT'},settings:{...textSettings,direction:'ltr',size:8,weight:900,letterSpacing:4,colorRole:'accent',after:5}};
+  if(type==='note')return {...base,content:{text:'ملاحظة مهمة أو قاعدة توضيحية داخل المستند.'},settings:{...textSettings,background:true,accentLine:true,border:true,padding:5,rounded:14,after:8}};
+  if(type==='terms')return {...base,content:{text:'تُحدد التفاصيل النهائية بعد فهم النطاق وطريقة العمل الحالية. أي دعم أو تعديلات إضافية يجب أن تكون ضمن اتفاق واضح ومحدود.'},settings:{...textSettings,size:10,lineHeight:1.9,background:false,after:5}};
+  if(type==='table')return {...base,content:{rows:[['الخدمة','الوصف','السعر'],['تطبيقات سطح مكتب','أداة داخلية مخصصة','يبدأ من 500$'],['أرشفة وإدارة ملفات','تنظيم ملفات ومعلومات','يبدأ من 900$']]},settings:{rows:3,columns:3,headerEnabled:true,footerEnabled:false,density:'normal',zebra:false,borders:'soft',align:'right',priceFormat:true,rounded:10,width:100,cellPadding:3,fontSize:10,headerWeight:800,headerBg:'#0d2b48',headerColor:'#ffffff'}};
+  if(type==='metrics')return {...base,content:{items:[['A4 PDF','Export'],['Defined','Scope'],['RTL','Arabic first']]},settings:{columns:3,after:8}};
+  if(type==='serviceCard')return {...base,content:{title:'مسار خدمة',text:'وصف مختصر يربط الخدمة بالمشكلة التشغيلية.'},settings:{...textSettings,background:true,border:true,padding:5,rounded:13,after:7}};
+  if(type==='contactCard')return {...base,content:{title:'بيانات التواصل',text:'sufyanaser@gmail.com · +964 770 811 1744'},settings:{...textSettings,background:true,border:true,padding:5,rounded:13,after:7}};
+  if(type==='statusCard')return {...base,content:{text:'Scope Ready'},settings:{...textSettings,colorRole:'accent',after:5}};
+  if(type==='section')return {...base,content:{text:'قسم جديد'},settings:{...textSettings,size:18,weight:800,after:8,border:true,padding:4,rounded:12}};
+  if(type==='divider')return {...base,content:{text:''},settings:{after:6}};
+  if(type==='spacer')return {...base,content:{text:''},settings:{height:12,after:0}};
+  if(type==='coverHero')return {...base,content:{kicker:'COMMERCIAL INFRASTRUCTURE DOCUMENT',title:'جدول الخدمات والباقات التشغيلية',text:'وثيقة أسعار مرجعية لخدمات NAS CodeWorks حسب فهم المشكلة والنطاق قبل التنفيذ.'},settings:{after:8}};
+  if(type==='pricing')return {...block('table'),type:'pricing',content:{rows:[['الخدمة','الوصف','السعر'],['تطبيقات سطح مكتب','أداة داخلية مخصصة','يبدأ من 500$'],['أرشفة داخلية','تنظيم ملفات ومعلومات','يبدأ من 900$'],['أتمتة وتقارير','حسب مصادر البيانات','يحدد بعد النطاق']]}};
+  if(type==='signature')return {...base,content:{text:'للتواصل: sufyanaser@gmail.com · +964 770 811 1744'},settings:{...textSettings,size:10,align:'center',colorRole:'muted',after:4}};
+  return {...base,content:{text:'عنصر جديد'},settings:{...textSettings}};
+}
+function starter(){
+  const s=defaultSettings(),p1=page('cover',true),p2=page('content',false),p3=page('content',false);
+  p1.blocks=[block('eyebrow'),block('coverHero'),block('metrics')];
+  p2.blocks=[block('eyebrow'),block('h1'),block('pricing'),block('note')];
+  p2.blocks[1].content.text='الأسعار المرجعية';p2.blocks[3].content.text='قاعدة التسعير: السعر لا يعتمد على عدد الشاشات فقط، بل على وضوح المشكلة، مصادر البيانات، وعدد المستخدمين.';
+  p3.blocks=[block('eyebrow'),block('h1'),block('table')];
+  p3.blocks[0].content.text='GENERAL TERMS';p3.blocks[1].content.text='الأحكام العامة';
+  p3.blocks[2].content.rows=[['البند','التفصيل','الحالة'],['النطاق','يحدد قبل التنفيذ','إلزامي'],['التعديلات','ضمن إطار العمل المتفق عليه','حسب الاتفاق'],['التسليم','اختبار وتشغيل وتوثيق','إلزامي']];
+  return {documentSettings:s,pages:[p1,p2,p3]};
+}
+function load(){try{const raw=localStorage.getItem(LS);if(raw){const parsed=JSON.parse(raw);if(parsed.documentSettings&&parsed.pages)return parsed}}catch(e){}return starter()}
+function save(){localStorage.setItem(LS,JSON.stringify(state))}
+function currentPage(){return state.pages[selPage]||state.pages[0]}
+function currentBlock(){const p=currentPage();return p&&selBlock?p.blocks.find(b=>b.id===selBlock):null}
+function setPath(obj,path,val){const keys=path.split('.');let o=obj;keys.slice(0,-1).forEach(k=>o=o[k]);o[keys.at(-1)]=val}
+function getPath(obj,path){return path.split('.').reduce((o,k)=>o&&o[k],obj)}
+function asVal(el){if(el.type==='checkbox')return el.checked;if(el.type==='number'||el.type==='range')return Number(el.value);return el.value}
+function pageVars(p){
+  const d=state.documentSettings,c=d.colors,g=d.geometry,v=d.visual,h=d.header,f=d.footer;
+  const isDark=p.style.mode==='dark'||(d.backgroundMode==='dark');
+  const bg=isDark?'#050910':'#ffffff', text=isDark?'#e8f3fb':c.text, muted=isDark?'#7e91a5':c.muted;
+  const card=isDark?'#0d1827':'#f7f9fb', border=isDark?'rgba(0,212,255,.22)':c.border;
+  return `--pBg:${bg};--pText:${text};--pMuted:${muted};--pAccent:${c.accent};--pBorder:${border};--pCard:${card};--headH:${h.enabled?g.headerSpacing:0}mm;--footH:${f.enabled?g.footerSpacing:0}mm;--padX:${g.marginX}mm;--padY:${g.marginY}mm;--logoSize:12mm;--gridO:${v.grid?v.gridOpacity:0}`;
+}
+function blockVars(b){
+  const s=b.settings||{};
+  const widthMap={auto:'max-content',narrow:'70mm',medium:'105mm',wide:'140mm',full:'100%'};
+  const pos=s.position||'start';
+  const color=s.colorRole==='accent'?'var(--pAccent)':s.colorRole==='muted'?'var(--pMuted)':s.colorRole==='inverse'?'#ffffff':'var(--pText)';
+  const bg=s.background?'color-mix(in srgb,var(--pAccent),transparent 92%)':'transparent';
+  const pad=s.padding?`${s.padding}mm`:'1mm 1.3mm';
+  const start=pos==='center'?'auto':pos==='end'?'auto':'0';
+  const end=pos==='center'?'auto':pos==='end'?'0':'auto';
+  return `--bFs:${s.size||11}pt;--bLh:${s.lineHeight||1.6};--bWeight:${s.weight||400};--bAlign:${s.align||'right'};--bAfter:${s.after??6}mm;--bPad:${pad};--bRadius:${s.rounded||8}px;--bWidth:${widthMap[s.width||'full']};--bStart:${start};--bEnd:${end};--bColor:${color};--bBg:${bg};--bLs:${s.letterSpacing||0}px;--spaceH:${s.height||10}mm`;
+}
+function tableVars(b){
+  const s=b.settings;const pads={compact:2,normal:s.cellPadding||3,spacious:5};const pad=pads[s.density]||s.cellPadding||3;
+  const border=s.borders==='none'?'0':s.borders==='clear'?'1px solid color-mix(in srgb,var(--pAccent),transparent 45%)':'1px solid var(--pBorder)';
+  return `--tWidth:${s.width||100}%;--tFs:${s.fontSize||10}pt;--tPad:${pad}mm;--tAlign:${s.align||'right'};--tBorder:${border};--tRadius:${s.rounded||10}px;--tHeadBg:${s.headerBg||'var(--pAccent)'};--tHeadColor:${s.headerColor||'#fff'};--tHeadWeight:${s.headerWeight||800};--tCellBg:var(--pCard)`;
+}
+function renderShell(){
+  root.innerHTML=`<div class="shell">
+    <header class="top">
+      <div class="brand"><div class="mark"></div><div>NAS <span style="color:var(--cyan)">Document Studio</span></div></div>
+      <div class="topMeta"><span class="mono">docpdf</span><span>Professional Inspector</span></div>
+      <div class="grow"></div>
+      <button class="btn" data-action="addPage">+ صفحة</button>
+      <button class="btn" data-add="paragraph">+ فقرة</button>
+      <button class="btn" data-add="table">+ جدول</button>
+      <button class="btn" data-action="exportJson">JSON</button>
+      <button class="btn primary" data-action="print">A4 PDF</button>
+      <span class="pill">System Ready</span>
+    </header>
+    <main class="app">
+      <aside class="side" id="leftPanel"></aside>
+      <section class="canvasWrap"><div class="canvas" id="canvas"></div></section>
+      <aside class="side right" id="rightPanel"></aside>
+    </main>
+    <input id="jsonFile" type="file" hidden accept="application/json,.json" />
+  </div>`;
+}
+function ctrl(label,path,type='text',extra=''){
+  const v=getPath(state.documentSettings,path);
+  if(type==='checkbox')return `<label class="ctrl"><span class="labelLine"><span>${label}</span></span><div class="seg" style="--n:2"><button class="segBtn ${v?'active':''}" data-doc-bool="${path}" data-val="true">تفعيل</button><button class="segBtn ${!v?'active':''}" data-doc-bool="${path}" data-val="false">إيقاف</button></div></label>`;
+  if(type==='color')return `<label class="ctrl"><span class="labelLine"><span>${label}</span><span class="value">${v}</span></span><div class="swatchRow"><input type="color" value="${v}" data-doc="${path}"><input class="field mono" value="${v}" data-doc="${path}"></div></label>`;
+  if(type==='range')return `<label class="ctrl"><span class="labelLine"><span>${label}</span><span class="value">${v}</span></span><input type="range" value="${v}" data-doc="${path}" ${extra}></label>`;
+  if(type==='select')return `<label class="ctrl"><span class="labelLine"><span>${label}</span></span><select data-doc="${path}">${extra}</select></label>`;
+  return `<label class="ctrl"><span class="labelLine"><span>${label}</span></span><input class="field" type="${type}" value="${esc(v)}" data-doc="${path}"></label>`;
+}
+function options(list,val){return list.map(([v,t])=>`<option value="${v}" ${v===val?'selected':''}>${t}</option>`).join('')}
+function renderLeft(){
+  const d=state.documentSettings;
+  document.getElementById('leftPanel').innerHTML=`
+  <div class="sideHead"><div><div class="sideTitle">Document Settings</div><div class="sideSub">إعدادات عامة للمستند فقط</div></div><button class="iconBtn" data-action="resetDoc">Reset</button></div>
+  <details class="acc" open><summary><span class="sum">Document Preset<small>${d.pageSize} · ${d.orientation} · ${d.direction.toUpperCase()}</small></span></summary><div class="accBody">
+    <div class="seg" style="--n:2"><button class="segBtn ${d.pageSize==='A4'?'active':''}" data-doc-bool="pageSize" data-val="A4">A4</button><button class="segBtn ${d.pageSize==='Letter'?'active':''}" data-doc-bool="pageSize" data-val="Letter">Letter</button></div>
+    <div class="seg" style="--n:2;margin-top:8px"><button class="segBtn ${d.orientation==='portrait'?'active':''}" data-doc-bool="orientation" data-val="portrait">Portrait</button><button class="segBtn ${d.orientation==='landscape'?'active':''}" data-doc-bool="orientation" data-val="landscape">Landscape</button></div>
+    <div class="seg" style="--n:2;margin-top:8px"><button class="segBtn ${d.direction==='rtl'?'active':''}" data-doc-bool="direction" data-val="rtl">RTL</button><button class="segBtn ${d.direction==='ltr'?'active':''}" data-doc-bool="direction" data-val="ltr">LTR</button></div>
+    <div class="hint" style="margin-top:8px">Pages: ${state.pages.length} · Export: PDF</div>
+  </div></details>
+  <details class="acc" open><summary><span class="sum">Theme & Visual Style<small>${d.theme} · grid ${d.visual.grid?'on':'off'}</small></span></summary><div class="accBody">
+    ${ctrl('Theme preset','theme','select',options([['light-pro','Light Professional'],['dark-pro','Dark Professional'],['mixed','Mixed Cover']],d.theme))}
+    ${ctrl('Primary color','colors.primary','color')}
+    ${ctrl('Accent color','colors.accent','color')}
+    ${ctrl('Text color','colors.text','color')}
+    ${ctrl('Border intensity','visual.borderIntensity','range','min="0" max="100"')}
+    ${ctrl('Glow intensity','visual.glowIntensity','range','min="0" max="100"')}
+    ${ctrl('Grid visibility','visual.grid','checkbox')}
+    ${ctrl('Grid opacity','visual.gridOpacity','range','min="0" max=".12" step=".005"')}
+    ${ctrl('Cover aura','visual.coverAura','checkbox')}
+  </div></details>
+  <details class="acc"><summary><span class="sum">Page Geometry<small>Margins ${d.geometry.marginX}/${d.geometry.marginY}mm</small></span></summary><div class="accBody">
+    ${ctrl('Page margin X mm','geometry.marginX','range','min="6" max="30"')}
+    ${ctrl('Page margin Y mm','geometry.marginY','range','min="6" max="30"')}
+    ${ctrl('Section spacing mm','geometry.sectionSpacing','range','min="0" max="24"')}
+    ${ctrl('Content max width %','geometry.contentMaxWidth','range','min="60" max="100"')}
+    ${ctrl('Header spacing mm','geometry.headerSpacing','range','min="0" max="32"')}
+    ${ctrl('Footer spacing mm','geometry.footerSpacing','range','min="0" max="24"')}
+    ${ctrl('Safe area preview','visual.safeArea','checkbox')}
+  </div></details>
+  <details class="acc"><summary><span class="sum">Header / Footer<small>Header ${d.header.enabled?'on':'off'} · Footer ${d.footer.enabled?'on':'off'}</small></span></summary><div class="accBody">
+    ${ctrl('Show header','header.enabled','checkbox')}
+    ${ctrl('Show footer','footer.enabled','checkbox')}
+    ${ctrl('Logo visibility','header.logo','checkbox')}
+    ${ctrl('Header line','header.line','checkbox')}
+    ${ctrl('Header left','header.left','checkbox')}
+    ${ctrl('Header center','header.center','checkbox')}
+    ${ctrl('Header right','header.right','checkbox')}
+    ${ctrl('Page number','footer.pageNumber','checkbox')}
+    ${ctrl('Contact info','footer.contact','checkbox')}
+  </div></details>
+  <details class="acc"><summary><span class="sum">Typography System<small>Base ${d.typography.base}pt · Title ${d.typography.title}pt</small></span></summary><div class="accBody">
+    ${ctrl('Arabic font','typography.arabic')}
+    ${ctrl('English font','typography.english')}
+    ${ctrl('Base font size','typography.base','range','min="8" max="16"')}
+    ${ctrl('Title size','typography.title','range','min="18" max="38"')}
+    ${ctrl('Subtitle size','typography.subtitle','range','min="12" max="24"')}
+    ${ctrl('Line height','typography.lineHeight','range','min="1.1" max="2.4" step=".05"')}
+    ${ctrl('Paragraph spacing','typography.paragraphSpacing','range','min="0" max="18"')}
+    ${ctrl('English letter spacing','typography.letterSpacing','range','min="0" max="6" step=".25"')}
+  </div></details>
+  <details class="acc"><summary><span class="sum">Export & Quality<small>${d.export.filename}.pdf</small></span></summary><div class="accBody">
+    ${ctrl('PDF scale','export.scale','range','min=".7" max="1.4" step=".05"')}
+    ${ctrl('Print background','export.printBackground','checkbox')}
+    ${ctrl('High quality export','export.highQuality','checkbox')}
+    ${ctrl('Filename','export.filename')}
+    <div class="grid2"><button class="btn primary" data-action="print">Export PDF</button><button class="btn" data-action="exportJson">Export JSON</button><button class="btn" data-action="importJson">Import JSON</button><button class="btn danger" data-action="resetAll">Reset All</button></div>
+  </div></details>`;
+}
+function renderRight(){
+  const b=currentBlock();
+  document.getElementById('rightPanel').innerHTML=`
+  <div class="sideHead"><div><div class="sideTitle">${rightMode==='add'?'Block Library':'Element Inspector'}</div><div class="sideSub">${rightMode==='add'?'إضافة عناصر مصنفة':'خصائص العنصر المحدد'}</div></div></div>
+  <div class="modeTabs"><button class="segBtn ${rightMode==='add'?'active':''}" data-mode="add">Add Blocks</button><button class="segBtn ${rightMode==='inspect'?'active':''}" data-mode="inspect" ${!b?'disabled':''}>Inspector</button></div>
+  ${rightMode==='add'?blockLibrary():inspector(b)}
+  `;
+}
+function blockLibrary(){
+  const group=(title,sub,items,open='')=>`<details class="acc" ${open}><summary><span class="sum">${title}<small>${sub}</small></span></summary><div class="accBody"><div class="grid2">${items.map(([t,l,s])=>`<button class="blockBtn" data-add="${t}"><span>${l}</span><small>${s}</small></button>`).join('')}</div></div></details>`;
+  return `
+    ${group('Text Blocks','عناوين وفقرات وملاحظات',[
+      ['h1','Main title','عنوان رئيسي'],['subtitle','Subtitle','عنوان فرعي'],['paragraph','Paragraph','فقرة تحريرية'],['eyebrow','Label / Eyebrow','وسم إنكليزي'],['note','Note box','ملاحظة'],['terms','Terms paragraph','نص أحكام']
+    ],'open')}
+    ${group('Tables','جداول قابلة للتحكم',[
+      ['table','Pricing table','جدول أسعار'],['pricing','Service table','جدول خدمات'],['table','Terms table','جدول أحكام'],['table','Comparison table','مقارنة'],['table','Empty custom table','جدول فارغ']
+    ],'open')}
+    ${group('Cards & Metrics','بطاقات ومؤشرات',[
+      ['metrics','Metric cards','مؤشرات'],['serviceCard','Service card','بطاقة خدمة'],['serviceCard','Feature card','ميزة'],['contactCard','Contact card','تواصل'],['statusCard','Status card','حالة']
+    ])}
+    ${group('Layout Blocks','تنظيم الصفحة',[
+      ['section','Section wrapper','قسم'],['divider','Divider','فاصل'],['spacer','Spacer','مسافة'],['note','Highlight box','تسليط'],['paragraph','Two-column row','نص']
+    ])}
+    ${group('Document Blocks','أجزاء مستندية جاهزة',[
+      ['coverHero','Cover hero','غلاف'],['pricing','Pricing section','أسعار'],['terms','Terms section','أحكام'],['signature','Signature/contact footer','توقيع']
+    ])}
+  `;
+}
+function inspector(b){
+  if(!b)return `<div class="emptyState">حدد عنصراً من صفحة المعاينة لفتح خصائصه.</div>`;
+  return `
+  <details class="acc" open><summary><span class="sum">Selected Element<small>${b.type} · ${b.id}</small></span></summary><div class="accBody">
+    <div class="grid3"><button class="btn" data-block-action="up">↑</button><button class="btn" data-block-action="down">↓</button><button class="btn" data-block-action="duplicate">نسخ</button></div>
+    <div class="grid2" style="margin-top:8px"><button class="btn" data-block-action="resetStyle">Reset Style</button><button class="btn danger" data-block-action="delete">Delete</button></div>
+  </div></details>
+  ${contentControls(b)}
+  ${textLike(b)?paragraphControls(b):''}
+  ${tableLike(b)?tableControls(b):''}
+  ${layoutControls(b)}
+  `;
+}
+function contentControls(b){
+  if(tableLike(b))return `<details class="acc" open><summary><span class="sum">Content<small>Table cells editable on page</small></span></summary><div class="accBody"><textarea data-table-csv placeholder="Paste CSV / tab separated rows"></textarea><button class="btn" data-block-action="pasteTable">Paste rows into table</button><div class="hint" style="margin-top:8px">يمكن تعديل الخلايا مباشرة داخل الصفحة أو لصق صفوف CSV هنا.</div></div></details>`;
+  if(b.type==='coverHero')return `<details class="acc" open><summary><span class="sum">Content<small>Cover hero text</small></span></summary><div class="accBody">${field('Kicker','content.kicker',b.content.kicker)}${area('Title','content.title',b.content.title)}${area('Text','content.text',b.content.text)}</div></details>`;
+  if(b.type==='metrics')return `<details class="acc" open><summary><span class="sum">Content<small>Metric cards</small></span></summary><div class="accBody"><textarea data-metrics>${b.content.items.map(x=>x.join('|')).join('\n')}</textarea><div class="hint">كل سطر: القيمة | الوصف</div></div></details>`;
+  if(b.type==='serviceCard'||b.type==='contactCard')return `<details class="acc" open><summary><span class="sum">Content<small>Card text</small></span></summary><div class="accBody">${field('Title','content.title',b.content.title)}${area('Text','content.text',b.content.text)}</div></details>`;
+  if(textLike(b))return `<details class="acc" open><summary><span class="sum">Content<small>Editable text</small></span></summary><div class="accBody">${area('Text','content.text',b.content.text)}</div></details>`;
+  return '';
+}
+function field(label,path,val){return `<label class="ctrl"><span class="labelLine"><span>${label}</span></span><input class="field" value="${esc(val)}" data-block="${path}"></label>`}
+function area(label,path,val){return `<label class="ctrl"><span class="labelLine"><span>${label}</span></span><textarea data-block="${path}">${esc(val)}</textarea></label>`}
+function bctrl(label,path,type='range',extra=''){
+  const b=currentBlock(),v=getPath(b,path);
+  if(type==='checkbox')return `<label class="ctrl"><span class="labelLine"><span>${label}</span></span><div class="seg" style="--n:2"><button class="segBtn ${v?'active':''}" data-block-bool="${path}" data-val="true">تفعيل</button><button class="segBtn ${!v?'active':''}" data-block-bool="${path}" data-val="false">إيقاف</button></div></label>`;
+  if(type==='select')return `<label class="ctrl"><span class="labelLine"><span>${label}</span></span><select data-block="${path}">${extra}</select></label>`;
+  if(type==='color')return `<label class="ctrl"><span class="labelLine"><span>${label}</span><span class="value">${v}</span></span><input type="color" value="${v}" data-block="${path}"></label>`;
+  return `<label class="ctrl"><span class="labelLine"><span>${label}</span><span class="value">${v}</span></span><input type="${type}" class="${type==='range'?'':'field'}" value="${esc(v)}" data-block="${path}" ${extra}></label>`;
+}
+function paragraphControls(b){
+  return `<details class="acc" open><summary><span class="sum">Paragraph / Typography<small>${b.settings.size||11}pt · ${b.settings.align||'right'}</small></span></summary><div class="accBody">
+    ${bctrl('Direction','settings.direction','select',options([['rtl','RTL Arabic'],['ltr','LTR English']],b.settings.direction))}
+    ${bctrl('Font size','settings.size','range','min="7" max="42" step=".5"')}
+    ${bctrl('Font weight','settings.weight','select',options([[300,'300'],[400,'400'],[600,'600'],[700,'700'],[800,'800'],[900,'900']],b.settings.weight))}
+    ${bctrl('Line height','settings.lineHeight','range','min="1" max="2.6" step=".05"')}
+    ${bctrl('Text alignment','settings.align','select',options([['right','يمين'],['center','وسط'],['left','يسار'],['justify','ضبط']],b.settings.align))}
+    ${bctrl('Max width','settings.width','select',options([['auto','Auto'],['narrow','Narrow'],['medium','Medium'],['wide','Wide'],['full','Full']],b.settings.width))}
+    ${bctrl('Position','settings.position','select',options([['start','Start'],['center','Center'],['end','End']],b.settings.position))}
+    ${bctrl('Spacing before','settings.before','range','min="0" max="24"')}
+    ${bctrl('Spacing after','settings.after','range','min="0" max="24"')}
+    ${bctrl('Indent','settings.indent','range','min="0" max="20"')}
+    ${bctrl('Letter spacing','settings.letterSpacing','range','min="0" max="8" step=".25"')}
+  </div></details>
+  <details class="acc"><summary><span class="sum">Paragraph Visual<small>${b.settings.colorRole||'default'}</small></span></summary><div class="accBody">
+    ${bctrl('Text color role','settings.colorRole','select',options([['default','Default'],['muted','Muted'],['accent','Accent'],['inverse','Inverse']],b.settings.colorRole))}
+    ${bctrl('Background','settings.background','checkbox')}
+    ${bctrl('Accent side line','settings.accentLine','checkbox')}
+    ${bctrl('Border','settings.border','checkbox')}
+    ${bctrl('Rounded corners','settings.rounded','range','min="0" max="26"')}
+    ${bctrl('Padding mm','settings.padding','range','min="0" max="12"')}
+  </div></details>`;
+}
+function tableControls(b){
+  return `<details class="acc" open><summary><span class="sum">Table Structure<small>${b.content.rows.length} rows · ${Math.max(...b.content.rows.map(r=>r.length))} cols</small></span></summary><div class="accBody">
+    <div class="grid2"><button class="btn" data-block-action="addRow">+ صف</button><button class="btn" data-block-action="removeRow">− صف</button><button class="btn" data-block-action="addCol">+ عمود</button><button class="btn" data-block-action="removeCol">− عمود</button></div>
+    <div class="grid2" style="margin-top:8px"><button class="btn" data-block-action="moveRowUp">تحريك صف ↑</button><button class="btn" data-block-action="moveRowDown">تحريك صف ↓</button><button class="btn" data-block-action="moveColUp">تحريك عمود →</button><button class="btn" data-block-action="moveColDown">تحريك عمود ←</button></div>
+    ${bctrl('Header row','settings.headerEnabled','checkbox')}
+    ${bctrl('Footer row','settings.footerEnabled','checkbox')}
+  </div></details>
+  <details class="acc" open><summary><span class="sum">Table Style<small>${b.settings.density} · ${b.settings.borders}</small></span></summary><div class="accBody">
+    ${bctrl('Density','settings.density','select',options([['compact','Compact'],['normal','Normal'],['spacious','Spacious']],b.settings.density))}
+    ${bctrl('Zebra rows','settings.zebra','checkbox')}
+    ${bctrl('Borders','settings.borders','select',options([['none','None'],['soft','Soft'],['clear','Clear']],b.settings.borders))}
+    ${bctrl('Column alignment','settings.align','select',options([['right','RTL / Right'],['center','Center'],['left','LTR / Left']],b.settings.align))}
+    ${bctrl('Price formatting','settings.priceFormat','checkbox')}
+    ${bctrl('Rounded corners','settings.rounded','range','min="0" max="22"')}
+    ${bctrl('Table width %','settings.width','range','min="50" max="100"')}
+    ${bctrl('Cell padding mm','settings.cellPadding','range','min="1" max="7" step=".5"')}
+    ${bctrl('Font size','settings.fontSize','range','min="7" max="15" step=".5"')}
+    ${bctrl('Header font weight','settings.headerWeight','select',options([[400,'400'],[600,'600'],[700,'700'],[800,'800'],[900,'900']],b.settings.headerWeight))}
+    ${bctrl('Header background','settings.headerBg','color')}
+    ${bctrl('Header text color','settings.headerColor','color')}
+  </div></details>`;
+}
+function layoutControls(b){return `<details class="acc"><summary><span class="sum">Layout<small>Page ${selPage+1}</small></span></summary><div class="accBody"><div class="grid2"><button class="btn" data-block-action="up">Move up</button><button class="btn" data-block-action="down">Move down</button></div><div class="hint" style="margin-top:8px">يتم منع خروج الجداول والعناصر عن حدود الصفحة عبر عرض الصفحة الآمن. عند زيادة الصفوف راقب حدود الصفحة.</div></div></details>`}
+function textLike(b){return ['h1','subtitle','paragraph','eyebrow','note','terms','serviceCard','contactCard','section','statusCard','signature'].includes(b.type)}
+function tableLike(b){return ['table','pricing'].includes(b.type)}
+function renderPreview(){
+  const d=state.documentSettings;
+  document.getElementById('canvas').innerHTML=state.pages.map((p,pi)=>{
+    const classes=['page',d.orientation==='landscape'?'landscape':'',pi===selPage?'selected':'',d.visual.grid?'grid':'',d.visual.safeArea?'safe':'',p.type==='cover'&&d.visual.coverAura?'coverAura':''].join(' ');
+    return `<section class="${classes}" data-page="${pi}" style="${pageVars(p)}">${headerHTML(p,pi)}<div class="content">${p.blocks.map((b,bi)=>blockWrap(b,bi)).join('')||'<div class="emptyState">أضف عناصر من Block Library</div>'}</div>${footerHTML(p,pi)}</section>`;
+  }).join('');
+}
+function headerHTML(p,pi){const h=state.documentSettings.header;if(!h.enabled)return '';return `<div class="head ${!h.enabled?'hide':''}"><div class="hl" style="${h.left?'':'visibility:hidden'}">NAS CodeWorks</div><div class="hc" style="${h.center?'':'visibility:hidden'}">NAS Document Studio</div><div class="hr" style="${h.right?'':'visibility:hidden'}"><div class="logoBox" style="${h.logo?'':'display:none'}"><div class="logoMark"></div>${h.logoText?'<div class="logoText">CodeWorks</div>':''}</div></div></div>`}
+function footerHTML(p,pi){const f=state.documentSettings.footer;if(!f.enabled)return '';const pageTxt=f.pageNumber?`Page ${pi+1} / ${state.pages.length}`:'';const contact=f.contact?'sufyanaser@gmail.com · +964 770 811 1744':'';return `<div class="foot"><span>${esc(pageTxt)}</span><span>${f.center?'NAS Document Studio':''}</span><span class="mono">${esc(contact)}</span></div>`}
+function blockWrap(b,bi){const cls=['blk',selBlock===b.id?'sel':'',b.settings&&b.settings.accentLine?'accentLine':''].join(' ');return `<div class="${cls}" data-block-id="${b.id}" style="${blockVars(b)}"><div class="blkLabel">${esc(b.type)}</div><div class="btool"><button data-block-action="up">↑</button><button data-block-action="down">↓</button><button data-block-action="duplicate">⧉</button><button data-block-action="delete">×</button></div>${blockHTML(b)}</div>`}
+function blockHTML(b){
+  const dir=b.settings?.direction||state.documentSettings.direction;
+  if(b.type==='h1')return `<h1 class="bTitle" dir="${dir}" contenteditable data-edit="content.text">${esc(b.content.text)}</h1>`;
+  if(b.type==='subtitle')return `<h2 class="bSub" dir="${dir}" contenteditable data-edit="content.text">${esc(b.content.text)}</h2>`;
+  if(['paragraph','terms','signature'].includes(b.type))return `<p class="bPara" dir="${dir}" contenteditable data-edit="content.text">${esc(b.content.text)}</p>`;
+  if(b.type==='eyebrow')return `<div class="eyebrow" dir="ltr" contenteditable data-edit="content.text">${esc(b.content.text)}</div>`;
+  if(b.type==='note')return `<div class="noteBox bPara" dir="${dir}" contenteditable data-edit="content.text">${esc(b.content.text)}</div>`;
+  if(tableLike(b))return tableHTML(b);
+  if(b.type==='metrics')return `<div class="metricGrid" style="--cols:${b.settings.columns||3}">${b.content.items.map((it,idx)=>`<div class="metric"><div class="n" contenteditable data-metric="${idx}" data-mi="0">${esc(it[0])}</div><div class="l" contenteditable data-metric="${idx}" data-mi="1">${esc(it[1])}</div></div>`).join('')}</div>`;
+  if(b.type==='serviceCard'||b.type==='contactCard')return `<div class="card"><h3 contenteditable data-edit="content.title">${esc(b.content.title)}</h3><p contenteditable data-edit="content.text">${esc(b.content.text)}</p></div>`;
+  if(b.type==='statusCard')return `<div class="statusChip" contenteditable data-edit="content.text">${esc(b.content.text)}</div>`;
+  if(b.type==='section')return `<h2 class="bSub" contenteditable data-edit="content.text">${esc(b.content.text)}</h2>`;
+  if(b.type==='divider')return `<div class="divider"></div>`;
+  if(b.type==='spacer')return `<div class="spacer"></div>`;
+  if(b.type==='coverHero')return `<div class="coverHero"><div class="k" contenteditable data-edit="content.kicker">${esc(b.content.kicker)}</div><h1 contenteditable data-edit="content.title">${esc(b.content.title)}</h1><p contenteditable data-edit="content.text">${esc(b.content.text)}</p></div>`;
+  return `<p class="bPara" contenteditable data-edit="content.text">${esc(b.content.text)}</p>`;
+}
+function tableHTML(b){const rows=b.content.rows||[['','']];return `<div class="tableWrap" style="${tableVars(b)}"><table class="table ${b.settings.zebra?'zebra':''} ${b.settings.borders==='none'?'noBorder':''}"><tbody>${rows.map((r,ri)=>`<tr>${r.map((c,ci)=>{const tag=b.settings.headerEnabled&&ri===0?'th':'td';return `<${tag} contenteditable data-cell-row="${ri}" data-cell-col="${ci}">${esc(c)}</${tag}>`;}).join('')}</tr>`).join('')}</tbody></table></div>`}
+function renderAll(){renderLeft();renderRight();renderPreview();save()}
+function addBlock(type){const p=currentPage();const b=block(type);b.order=p.blocks.length;p.blocks.push(b);selBlock=b.id;rightMode='inspect';renderAll()}
+function addPage(){state.pages.push(page('content',false));selPage=state.pages.length-1;selBlock=null;renderAll()}
+function blockAction(action){
+  const p=currentPage(),i=p.blocks.findIndex(x=>x.id===selBlock);if(i<0)return;const b=p.blocks[i];
+  if(action==='delete'){p.blocks.splice(i,1);selBlock=null;rightMode='add'}
+  if(action==='duplicate'){const nb=deep(b);nb.id=UID();p.blocks.splice(i+1,0,nb);selBlock=nb.id}
+  if(action==='up'&&i>0){[p.blocks[i-1],p.blocks[i]]=[p.blocks[i],p.blocks[i-1]]}
+  if(action==='down'&&i<p.blocks.length-1){[p.blocks[i+1],p.blocks[i]]=[p.blocks[i],p.blocks[i+1]]}
+  if(action==='resetStyle'){const nb=block(b.type);b.settings=nb.settings;b.style=nb.style||{}}
+  if(tableLike(b)){const rows=b.content.rows;if(action==='addRow')rows.push(Array(rows[0]?.length||1).fill(''));if(action==='removeRow'&&rows.length>1)rows.pop();if(action==='addCol')rows.forEach(r=>r.push(''));if(action==='removeCol'&&rows[0].length>1)rows.forEach(r=>r.pop());if(action==='moveRowUp'&&rows.length>1){const j=rows.length-1;[rows[j-1],rows[j]]=[rows[j],rows[j-1]]}if(action==='moveRowDown'&&rows.length>1){[rows[0],rows[1]]=[rows[1],rows[0]]}if(action==='moveColUp'&&rows[0].length>1){rows.forEach(r=>{const j=r.length-1;[r[j-1],r[j]]=[r[j],r[j-1]]})}if(action==='moveColDown'&&rows[0].length>1){rows.forEach(r=>{[r[0],r[1]]=[r[1],r[0]]})}if(action==='pasteTable'){const ta=document.querySelector('[data-table-csv]');if(ta&&ta.value.trim()){b.content.rows=ta.value.trim().split(/\n/).map(line=>line.split(/\t|,/).map(x=>x.trim()))}}}
+  renderAll();
+}
+function exportJson(){const name=(state.documentSettings.export.filename||'nas-doc')+'.json';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function importJson(){document.getElementById('jsonFile').click()}
+function applyTemplate(){state=starter();selPage=0;selBlock=null;rightMode='add';renderAll()}
+function initEvents(){
+  root.addEventListener('click',e=>{
+    const page=e.target.closest('[data-page]');if(page){selPage=Number(page.dataset.page)}
+    const blk=e.target.closest('[data-block-id]');if(blk){selBlock=blk.dataset.blockId;rightMode='inspect'}
+    const add=e.target.closest('[data-add]');if(add){addBlock(add.dataset.add);return}
+    const mode=e.target.closest('[data-mode]');if(mode&&!mode.disabled){rightMode=mode.dataset.mode;renderRight();return}
+    const db=e.target.closest('[data-doc-bool]');if(db){const val=db.dataset.val;if(val==='true'||val==='false')setPath(state.documentSettings,db.dataset.docBool,val==='true');else setPath(state.documentSettings,db.dataset.docBool,val);renderAll();return}
+    const bb=e.target.closest('[data-block-bool]');if(bb){const b=currentBlock();setPath(b,bb.dataset.blockBool,bb.dataset.val==='true');renderAll();return}
+    const ba=e.target.closest('[data-block-action]');if(ba){blockAction(ba.dataset.blockAction);return}
+    const act=e.target.closest('[data-action]');if(act){const a=act.dataset.action;if(a==='print')window.print();if(a==='exportJson')exportJson();if(a==='importJson')importJson();if(a==='addPage')addPage();if(a==='resetDoc'){state.documentSettings=defaultSettings();renderAll()}if(a==='resetAll'){if(confirm('Reset document studio?'))applyTemplate()}return}
+    if(page||blk)renderAll();
+  });
+  root.addEventListener('input',e=>{
+    const doc=e.target.dataset.doc;if(doc){setPath(state.documentSettings,doc,asVal(e.target));renderPreview();save();return}
+    const bp=e.target.dataset.block;if(bp){const b=currentBlock();if(b){setPath(b,bp,asVal(e.target));renderPreview();save()}return}
+    const edit=e.target.dataset.edit;if(edit){const b=e.target.closest('[data-block-id]');if(b){const obj=currentPage().blocks.find(x=>x.id===b.dataset.blockId);if(obj){setPath(obj,edit,e.target.innerText);save()}}return}
+    const cr=e.target.dataset.cellRow;if(cr!==undefined){const b=e.target.closest('[data-block-id]');const obj=currentPage().blocks.find(x=>x.id===b.dataset.blockId);if(obj)obj.content.rows[Number(cr)][Number(e.target.dataset.cellCol)]=e.target.innerText;save();return}
+    const met=e.target.dataset.metric;if(met!==undefined){const b=e.target.closest('[data-block-id]');const obj=currentPage().blocks.find(x=>x.id===b.dataset.blockId);if(obj)obj.content.items[Number(met)][Number(e.target.dataset.mi)]=e.target.innerText;save();return}
+    if(e.target.matches('[data-metrics]')){const b=currentBlock();b.content.items=e.target.value.split(/\n/).filter(Boolean).map(line=>{const parts=line.split('|');return [parts[0]||'',parts[1]||'']});renderPreview();save()}
+  });
+  document.getElementById('jsonFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const imported=JSON.parse(r.result);if(imported.documentSettings&&imported.pages){state=imported;selPage=0;selBlock=null;renderAll()}}catch(err){alert('JSON import failed: '+err.message)}};r.readAsText(f)});
+}
+renderShell();renderAll();initEvents();
+})();
+</script>
 </body>
 </html>
